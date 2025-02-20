@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx-gateway-fabric
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ghcr.io
+    chart: nginx/charts/nginx-gateway-fabric
+    targetRevision: "1.6.1"
+    helm:
+      releaseName: nginx-gateway-fabric
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: nginx-gateway
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      prune: true
+      selfHeal: true
