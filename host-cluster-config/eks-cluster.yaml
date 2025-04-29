@@ -1,15 +1,32 @@
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
- name: vCluster-Demo
- region: eu-central-1
+  name: vCluster-Demo
+  region: eu-central-1
 nodeGroups:
- - name: ng-1
-   instanceType: t3.medium
-   desiredCapacity: 2
-   volumeSize: 80
+  - name: ng-1
+    instanceType: t3.medium
+    desiredCapacity: 2
+    iam:
+      withAddonPolicies:
+        ebs: true
+    volumeSize: 80
 
 addons:
-- name: aws-ebs-csi-driver
-  wellKnownPolicies:      # this setting adds IAM and service account
-    ebsCSIController: true
+  - name: eks-pod-identity-agent
+  - name: aws-ebs-csi-driver
+  - name: vpc-cni
+
+iam:
+  podIdentityAssociations:
+    # For the EBS CSI Driver
+    - namespace: kube-system
+      serviceAccountName: ebs-csi-controller-sa
+      roleName: vCluster-Demo-ebs-csi-controller-role  # Adding a specific role name
+      permissionPolicyARNs: ["arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"]
+    
+    # For the VPC CNI 
+    - namespace: kube-system
+      serviceAccountName: aws-node
+      roleName: vCluster-Demo-vpc-cni-role  # Adding a specific role name
+      permissionPolicyARNs: ["arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"]
