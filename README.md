@@ -12,3 +12,4 @@
 ```
 kubectl patch storageclass gp2 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
 ```
+- **Allow internal DNS resolution**: vCluster runs CoreDNS on port 1053 to avoid conflicts with host cluster DNS. On EKS, DNS resolution may fail if pods are scheduled on different nodes due to restrictive security groups. Manually update the EKS node security group to allow inbound TCP and UDP traffic on port 1053 between nodes.
