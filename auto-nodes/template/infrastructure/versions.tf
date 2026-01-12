@@ -5,6 +5,7 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 6.50.0"
     }
+    # TODO: NAT module uses google-beta, we should drop it
     google-beta = {
       source  = "hashicorp/google-beta"
       version = "~> 6.50.0"

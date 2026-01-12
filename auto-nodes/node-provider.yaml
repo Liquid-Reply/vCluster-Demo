@@ -8,9 +8,9 @@ spec:
     nodeEnvironmentTemplate:
       infrastructure:
         git:
-          repository: https://github.com/loft-sh/vcluster-auto-nodes-gcp.git
-          tag: v0.1.0
-          subPath: environment/infrastructure
+          repository: https://github.com/Liquid-Reply/vCluster-Demo.git
+          branch: demo-auto-nodes
+          subPath: auto-nodes/template/infrastructure
       kubernetes:
         git:
           repository: https://github.com/loft-sh/vcluster-auto-nodes-gcp.git
@@ -20,7 +20,7 @@ spec:
       git:
         repository: https://github.com/Liquid-Reply/vCluster-Demo.git
         branch: demo-auto-nodes
-        subPath: auto-nodes
+        subPath: auto-nodes/template/node
     nodeTypes:
       # CPU node for general workloads
       - name: e2-small-europe-west1-b
