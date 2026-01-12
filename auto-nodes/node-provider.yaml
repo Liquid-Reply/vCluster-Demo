@@ -11,6 +11,10 @@ spec:
           repository: https://github.com/Liquid-Reply/vCluster-Demo.git
           branch: demo-auto-nodes
           subPath: auto-nodes/template/infrastructure
+          credentials:
+            secretName: git-credentials
+            secretNamespace: vcluster-platform
+            key: password
       kubernetes:
         git:
           repository: https://github.com/loft-sh/vcluster-auto-nodes-gcp.git
@@ -21,8 +25,11 @@ spec:
         repository: https://github.com/Liquid-Reply/vCluster-Demo.git
         branch: demo-auto-nodes
         subPath: auto-nodes/template/node
+        credentials:
+          secretName: git-credentials
+          secretNamespace: vcluster-platform
+          key: password
     nodeTypes:
-      # CPU node for general workloads
       - name: e2-small-europe-west1-b
         resources:
           cpu: "2"
@@ -34,7 +41,6 @@ spec:
           project: "*"
           accelerator: none
       
-      # GPU node: N1-standard-1 + 1x T4 (your test config)
       - name: n1-standard-1-t4-europe-west1-b
         resources:
           cpu: "1"

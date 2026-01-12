@@ -65,7 +65,7 @@ provider "google" {
 }
 
 module "validation" {
-  source  = "../validation"
+  source  = "./validation"
   project = nonsensitive(var.vcluster.properties["project"])
   region  = nonsensitive(var.vcluster.properties["region"])
   zone    = try(nonsensitive(var.vcluster.properties["zone"]), "")

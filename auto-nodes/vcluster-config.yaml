@@ -4,20 +4,6 @@ controlPlane:
     spec:
       type: LoadBalancer
 
-helmCharts:
-  - name: gpu-operator
-    repo: https://helm.ngc.nvidia.com/nvidia
-    chart: gpu-operator
-    namespace: gpu-operator
-    createNamespace: true
-    values: |
-      driver:
-        enabled: true
-      toolkit:
-        enabled: true
-      devicePlugin:
-        enabled: true
-
 privateNodes:
   enabled: true
   autoNodes:
