@@ -1,0 +1,66 @@
+# vcluster.yaml
+controlPlane:
+  service:
+    spec:
+      type: LoadBalancer
+
+helmCharts:
+  - name: gpu-operator
+    repo: https://helm.ngc.nvidia.com/nvidia
+    chart: gpu-operator
+    namespace: gpu-operator
+    createNamespace: true
+    values: |
+      driver:
+        enabled: true
+      toolkit:
+        enabled: true
+      devicePlugin:
+        enabled: true
+
+privateNodes:
+  enabled: true
+  autoNodes:
+    - provider: gcp-compute
+      properties:
+        project: "liquid-jannis-vcluster-dem-809"
+        region: "europe-west1"
+      dynamic:
+        # CPU nodes
+        - name: cpu-nodes
+          nodeTypeSelector:
+            - property: region
+              operator: In
+              values: ["europe-west1"]
+            - property: zone
+              operator: In
+              values: ["europe-west1-b"]
+            - property: accelerator
+              operator: In
+              values: ["none"]
+            - property: instance-type
+              operator: In
+              values: ["e2-small"]
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+        
+        # GPU nodes (T4)
+        - name: gpu-nodes
+          nodeTypeSelector:
+            - property: region
+              operator: In
+              values: ["europe-west1"]
+            - property: zone
+              operator: In
+              values: ["europe-west1-b"]
+            - property: accelerator
+              operator: In
+              values: ["nvidia-tesla-t4"]
+            - property: instance-type
+              operator: In
+              values: ["n1-standard-1"]
+          limits:
+            cpu: "2"
+            memory: "8Gi"
+            nvidia.com/gpu: "1"

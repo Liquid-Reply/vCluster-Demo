@@ -1,0 +1,23 @@
+# test-gpu.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gpu-test
+spec:
+  ttlSecondsAfterFinished: 120
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: gpu-test
+        image: nvidia/cuda:12.1.0-base-ubuntu22.04
+        command: ["nvidia-smi"]
+        resources:
+          requests:
+            nvidia.com/gpu: "1"
+          limits:
+            nvidia.com/gpu: "1"
+      tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Exists"
+        effect: "NoSchedule"

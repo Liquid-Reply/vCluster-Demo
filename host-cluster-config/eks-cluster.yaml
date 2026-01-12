@@ -1,8 +1,9 @@
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
-  name: vCluster-Demo
+  name: vCluster-Private-Node-Demo
   region: eu-central-1
+  version: "1.33"
 nodeGroups:
   - name: ng-1
     instanceType: t3.xlarge
