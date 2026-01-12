@@ -16,47 +16,10 @@ locals {
   accelerator_count = try(tonumber(nonsensitive(var.vcluster.nodeType.spec.properties["accelerator-count"])), 0)
   has_gpu           = local.accelerator != "none" && local.accelerator != "" && local.accelerator_count > 0
 
-  # Startup scripts
-  gpu_startup_script = <<-EOF
-    #!/bin/bash
-    set -e
-    exec > /var/log/gpu-setup.log 2>&1
-
-    echo "=== GPU Setup Started ==="
-
-    # Wait for cloud-init and apt
-    cloud-init status --wait || true
-    while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 1; done
-
-    # Install NVIDIA driver
-    echo "Installing NVIDIA driver..."
-    apt-get update
-    apt-get install -y linux-headers-$(uname -r)
-    apt-get install -y nvidia-driver-535
-
-    # Install NVIDIA Container Toolkit
-    echo "Installing NVIDIA Container Toolkit..."
-    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
-    curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
-      sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
-      tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
-    apt-get update
-    apt-get install -y nvidia-container-toolkit
-
-    # Configure containerd for NVIDIA
-    echo "Configuring containerd..."
-    nvidia-ctk runtime configure --runtime=containerd
-    systemctl restart containerd
-
-    echo "=== GPU Setup Complete ==="
-  EOF
-
-  cpu_startup_script = <<-EOF
+  startup_script = <<-EOF
     #!/bin/bash
     cloud-init status --wait || true
   EOF
-
-  startup_script = local.has_gpu ? local.gpu_startup_script : local.cpu_startup_script
 }
 
 provider "google" {
