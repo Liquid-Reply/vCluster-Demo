@@ -15,15 +15,16 @@ locals {
   has_gpu           = local.accelerator != "none" && local.accelerator != "" && local.accelerator_count > 0
   
   # Image selection based on GPU presence
+  # GPU: Deep Learning VM with CUDA 12.8, Ubuntu 24.04, NVIDIA driver 570
   image_config = local.has_gpu ? {
-    family  = "common-cu124-ubuntu-2404-py312"
+    family  = "common-cu128-ubuntu-2404-nvidia-570"
     project = "deeplearning-platform-release"
   } : {
     family  = "ubuntu-2404-lts-amd64"
     project = "ubuntu-os-cloud"
   }
   
-  # Startup scripts defined separately to avoid heredoc syntax issues
+  # Startup scripts
   gpu_startup_script = <<-EOF
 #!/bin/bash
 set -e
@@ -51,7 +52,6 @@ EOF
 cloud-init status --wait || true
 EOF
 
-  # Select appropriate startup script
   startup_script = local.has_gpu ? local.gpu_startup_script : local.standard_startup_script
 }
 
@@ -75,7 +75,6 @@ data "google_project" "project" {
   project_id = local.project
 }
 
-# Dynamic image selection based on GPU requirement
 data "google_compute_image" "img" {
   family  = local.image_config.family
   project = local.image_config.project
@@ -99,7 +98,6 @@ module "instance_template" {
   source_image_family  = data.google_compute_image.img.family
   source_image_project = data.google_compute_image.img.project
 
-  # Larger disk for GPU instances
   disk_size_gb = local.has_gpu ? 200 : 100
   disk_type    = local.has_gpu ? "pd-ssd" : "pd-balanced"
 
@@ -108,13 +106,11 @@ module "instance_template" {
     scopes = ["cloud-platform"]
   }
 
-  # GPU Configuration
   gpu = local.has_gpu ? {
     type  = local.accelerator
     count = local.accelerator_count
   } : null
 
-  # Required for GPU instances
   on_host_maintenance = local.has_gpu ? "TERMINATE" : "MIGRATE"
 
   metadata = {

@@ -4,7 +4,7 @@ kind: Job
 metadata:
   name: gpu-test
 spec:
-  ttlSecondsAfterFinished: 3600  # Keep for 1 hour after completion
+  ttlSecondsAfterFinished: 180
   template:
     spec:
       restartPolicy: Never
