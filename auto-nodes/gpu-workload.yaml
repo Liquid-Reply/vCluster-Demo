@@ -4,14 +4,59 @@ kind: Job
 metadata:
   name: gpu-test
 spec:
-  ttlSecondsAfterFinished: 120
+  ttlSecondsAfterFinished: 3600  # Keep for 1 hour after completion
   template:
     spec:
       restartPolicy: Never
       containers:
       - name: gpu-test
         image: nvidia/cuda:12.1.0-base-ubuntu22.04
-        command: ["nvidia-smi"]
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            echo "=========================================="
+            echo "AI Job Simulation Started"
+            echo "=========================================="
+            echo ""
+            echo "[$(date)] Checking GPU availability..."
+            nvidia-smi
+            echo ""
+            echo "[$(date)] GPU Driver Version:"
+            nvidia-smi --query-gpu=driver_version --format=csv,noheader
+            echo ""
+            echo "[$(date)] CUDA Version:"
+            nvcc --version 2>/dev/null || echo "nvcc not in this base image, but CUDA runtime is available"
+            echo ""
+            echo "[$(date)] GPU Memory Info:"
+            nvidia-smi --query-gpu=memory.total,memory.free,memory.used --format=csv
+            echo ""
+            echo "[$(date)] GPU Utilization:"
+            nvidia-smi --query-gpu=utilization.gpu,utilization.memory --format=csv
+            echo ""
+            echo "=========================================="
+            echo "[$(date)] Simulating AI model loading..."
+            sleep 5
+            echo "[$(date)] Model loaded successfully!"
+            echo ""
+            echo "[$(date)] Simulating inference batch 1/3..."
+            sleep 3
+            echo "[$(date)] Batch 1 complete - processed 32 samples"
+            echo ""
+            echo "[$(date)] Simulating inference batch 2/3..."
+            sleep 3
+            echo "[$(date)] Batch 2 complete - processed 32 samples"
+            echo ""
+            echo "[$(date)] Simulating inference batch 3/3..."
+            sleep 3
+            echo "[$(date)] Batch 3 complete - processed 32 samples"
+            echo ""
+            echo "=========================================="
+            echo "[$(date)] Final GPU state:"
+            nvidia-smi
+            echo ""
+            echo "[$(date)] AI Job Simulation Completed Successfully!"
+            echo "=========================================="
+            echo ""
         resources:
           requests:
             nvidia.com/gpu: "1"
