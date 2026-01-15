@@ -1,175 +1,102 @@
-# vcluster Resource Sharing with Cert Manager
-
-This guide demonstrates how to use vcluster's resource sharing capabilities by installing Cert Manager on the host cluster and using it to generate certificates within a vcluster. This showcases one of vcluster's key advantages: sharing cluster-wide resources while maintaining workload isolation.
-
-## Architecture Overview
-
-```
-Host Cluster
-├── Cert Manager (installed)
-├── ClusterIssuer (selfsigned-issuer)
-└── vcluster
-    ├── Certificate resource (synced to host)
-    └── Generated TLS Secret (synced back)
-```
+---
 
 ## Prerequisites
+### Tools
+- **kubectl**: Install the Kubernetes command-line tool to interact with your cluster.
+- **vCluster CLI**: Install the vCluster command-line interface.
+- **AWS CLI**: Install and configure the AWS Command Line Interface.
+- **eksctl**: Install eksctl for EKS cluster management.
 
-- Kubernetes cluster (host cluster)
-- kubectl configured
-- vcluster CLI installed
-- Helm (optional, for easier Cert Manager installation)
+### EKS Cluster
+- **EBS-CSI Driver**: The driver add-on is needed to ensure proper EBS storage provisioning, which is required by vCluster to store data for virtual clusters.
+- **Storage Class**: vCluster requires a default StorageClass for its persistent volumes. EKS provides the gp2 StorageClass by default, but gp3 is required. Create a new StorageClass and remove the default status from the gp2 StorageClass:
+```
+kubectl patch storageclass gp2 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+```
+- **Allow internal DNS resolution**: vCluster runs CoreDNS on port 1053 to avoid conflicts with host cluster DNS. On EKS, DNS resolution may fail if pods are scheduled on different nodes due to restrictive security groups. Manually update the EKS node security group to allow inbound TCP and UDP traffic on port 1053 between nodes.
 
-## Step-by-Step Implementation
+## Deployment
 
-### Step 1: Install Cert Manager on Host Cluster
+Before deploying the platform, ensure the correct host cluster kube-context is in use. The host cluster kube-context configures which Kubernetes cluster and namespace `kubectl` commands interact with. To confirm the current context, run:
 
-Install Cert Manager using the official manifests:
+### Get the current Kubernetes context
 
 ```bash
-# Install Cert Manager CRDs and components
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
-
+kubectl config current-context
 ```
 
-### Step 2: Create ClusterIssuer on Host Cluster
+Once you've confirmed the correct context, deploy the platform by running:
 
-Create the ClusterIssuer resource:
+### Deploy the platform
 
 ```bash
-# Save as clusterissuer.yaml
-cat <<EOF | kubectl apply -f -
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: selfsigned-issuer
-spec:
-  selfSigned: {}
-EOF
+vcluster platform start
 ```
 
-Verify the ClusterIssuer is ready:
+This command deploys the platform onto the host-cluster in the `vcluster-platform` namespace. The `vcluster-platform` namespace is created automatically and serves as a dedicated space for the platform components.
+
+The UI automatically opens in your browser and logs you in. You are asked for your user details to create the administrator user.
+
+> **ℹ️ Info**  
+> The deployment process typically takes less than 1 minute, but can take up to 2 minutes depending on your cluster's resources and network speed.
+
+You should see output similar to the following:
+
+### Platform installation output
+
+```
+...
+
+##########################   LOGIN   ############################
+
+Username: admin
+Password: 27177595-21bc-4ff9-9f3a-51e0f722408b  # Change via UI or via: vcluster platform reset password
+
+Login via UI:  https://hth45c8.loft.host
+Login via CLI: vcluster platform login https://hth45c8.loft.host
+
+#################################################################
+
+vCluster Platform was successfully installed and can now be reached at: https://hth45c8.loft.host
+Thanks for using vCluster Platform!
+11:38:33 done You are successfully logged into vCluster Platform!
+- Use `vcluster platform create vcluster` to create a new virtual cluster
+- Use `vcluster platform add vcluster` to add an existing virtual cluster to a vCluster platform instance
+```
+
+After successful deployment, the UI automatically opens in your default web browser. You are prompted to create an administrator user.
+
+## Configuration
+
+The `vcluster CLI` offers various configuration options to customize the deployment process.
+
+### Non-default Kubernetes cluster
+
+By default, the platform is deployed to the current Kubernetes context.
+
+#### Get the current Kubernetes context
 
 ```bash
-kubectl get clusterissuer selfsigned-issuer -o wide
+kubectl config current-context
 ```
 
-### Step 3: Configure vcluster with Resource Sharing
+This can be overridden by specifying the `--context` flag:
 
-Create your vcluster configuration file:
+#### Deploy the platform to a specific Kubernetes context
 
 ```bash
-# Save as vcluster-values.yaml
-cat <<EOF > vcluster-values.yaml
-sync:
-  toHost:
-    ingresses:
-      enabled: true
-integrations:
-  certManager:
-    enabled: true
-controlPlane:
-  coredns:
-    enabled: true
-    embedded: true
-EOF
+vcluster platform start --context my-cluster
 ```
 
-### Step 4: Create and Connect to vcluster
+### Custom namespace
+
+By default, the platform is deployed to the `vcluster-platform` namespace. This can be changed by specifying the `--namespace` flag:
+
+#### Deploy the platform to a custom namespace
 
 ```bash
-# Create the vcluster
-vcluster create demo-cluster -f vcluster-values.yaml
-
-# Connect to the vcluster (this switches your kubectl context)
-vcluster connect demo-cluster
+vcluster platform start --namespace my-namespace
 ```
 
-### Step 5: Create Certificate in vcluster
-
-Now, working within the vcluster context, create the Certificate resource:
-
-```bash
-# Save as certificate.yaml
-cat <<EOF | kubectl apply -f -
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: example-com
-  namespace: default
-spec:
-  secretName: example-com-tls
-  dnsNames:
-  - example.com
-  - www.example.com
-  issuerRef:
-    name: selfsigned-issuer
-    kind: ClusterIssuer
-EOF
-```
-
-### Step 6: Verify Certificate Generation
-
-Check the certificate status within the vcluster:
-
-```bash
-# Check certificate status
-kubectl get certificate example-com -o wide
-
-# Check if the secret was created
-kubectl get secret example-com-tls
-
-# View certificate details
-kubectl describe certificate example-com
-```
-
-### Step 7: Verify Resource Sharing on Host Cluster
-
-Switch back to the host cluster context to see the synced resources:
-
-```bash
-# Disconnect from vcluster (returns to host context)
-vcluster disconnect
-
-# Check synced certificate on host cluster
-kubectl get certificate -A | grep example-com
-
-# Check synced secret on host cluster
-kubectl get secret -A | grep example-com-tls
-```
-
-## Key Benefits of This Approach
-
-### 1. **Resource Efficiency**
-- **Single Cert Manager Installation**: One Cert Manager installation serves multiple vclusters
-- **Reduced Resource Overhead**: No need to install Cert Manager in each vcluster
-- **Centralized Management**: Manage all certificate issuers from the host cluster
-
-### 2. **Cost Optimization**
-- **Shared Infrastructure**: Multiple teams can share the same Cert Manager setup
-- **Reduced Compute Requirements**: Lower overall resource consumption
-- **Simplified Operations**: Fewer components to maintain and update
-
-### 3. **Security and Compliance**
-- **Centralized Certificate Management**: Consistent certificate policies across all vclusters
-- **Controlled Access**: Host cluster admins control certificate issuers
-- **Audit Trail**: Centralized logging and monitoring of certificate operations
-
-### 4. **Operational Benefits**
-- **Simplified Upgrades**: Update Cert Manager once for all vclusters
-- **Consistent Configuration**: Same certificate issuers available everywhere
-- **Reduced Complexity**: Teams don't need to manage Cert Manager individually
-
-## Use Cases and Extensions
-
-### Multi-Tenant Scenarios
-- **Development Teams**: Each team gets their own vcluster but shares certificate infrastructure
-- **Environment Separation**: Different vclusters for dev/staging/prod with shared certificate management
-- **Customer Isolation**: SaaS providers can offer isolated environments while managing certificates centrally
-
-### Integration Patterns
-- **GitOps Workflows**: Certificate resources can be managed through Git repositories
-- **Automated Renewals**: Cert Manager handles renewals automatically across all vclusters
-- **Monitoring Integration**: Centralized monitoring of certificate expiration and health
-
-This example demonstrates vcluster's power in creating efficient, shared infrastructure while maintaining the isolation benefits of separate Kubernetes clusters.
+> **ℹ️ Info**  
+> If the specified namespace does not exist, it is created automatically.

@@ -1,101 +1,87 @@
 # vCluster-Demo
-## Prerequisites
-### Tools
-- **kubectl**: Install the Kubernetes command-line tool to interact with your cluster.
-- **vCluster CLI**: Install the vCluster command-line interface.
-- **AWS CLI**: Install and configure the AWS Command Line Interface.
-- **eksctl**: Install eksctl for EKS cluster management.
 
-### EKS Cluster
-- **EBS-CSI Driver**: The driver add-on is needed to ensure proper EBS storage provisioning, which is required by vCluster to store data for virtual clusters.
-- **Storage Class**: vCluster requires a default StorageClass for its persistent volumes. EKS provides the gp2 StorageClass by default, but gp3 is required. Create a new StorageClass and remove the default status from the gp2 StorageClass:
-```
-kubectl patch storageclass gp2 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
-```
-- **Allow internal DNS resolution**: vCluster runs CoreDNS on port 1053 to avoid conflicts with host cluster DNS. On EKS, DNS resolution may fail if pods are scheduled on different nodes due to restrictive security groups. Manually update the EKS node security group to allow inbound TCP and UDP traffic on port 1053 between nodes.
+This repository showcases the power of [vCluster](https://www.vcluster.com/) - virtual Kubernetes clusters that run inside regular namespaces. vCluster provides fully functional Kubernetes clusters that are lightweight, cost-effective, and provide strong isolation while sharing the underlying host cluster resources.
 
-## Deployment
+## Repository Overview
 
-Before deploying the platform, ensure the correct host cluster kube-context is in use. The host cluster kube-context configures which Kubernetes cluster and namespace `kubectl` commands interact with. To confirm the current context, run:
+This demo repository contains practical examples demonstrating key vCluster capabilities:
 
-### Get the current Kubernetes context
+| Demo | Description | Key Features |
+|------|-------------|--------------|
+| [Resource Sharing](#resource-sharing-demo) | Share host cluster resources with vclusters | Cert Manager integration, multi-tenancy, cost optimization |
+| [Auto Nodes](#auto-nodes-demo) | Automatically provision cloud compute nodes | GCP integration, GPU workloads, dynamic scaling |
 
-```bash
-kubectl config current-context
-```
+---
 
-Once you've confirmed the correct context, deploy the platform by running:
+## Resource Sharing Demo
 
-### Deploy the platform
+**Location:** [`resource-sharing/`](./resource-sharing/)
 
-```bash
-vcluster platform start
-```
+This demo demonstrates vCluster's **resource sharing capabilities** by integrating Cert Manager on the host cluster with virtual clusters. It showcases how vclusters can leverage cluster-wide resources while maintaining workload isolation.
 
-This command deploys the platform onto the host-cluster in the `vcluster-platform` namespace. The `vcluster-platform` namespace is created automatically and serves as a dedicated space for the platform components.
-
-The UI automatically opens in your browser and logs you in. You are asked for your user details to create the administrator user.
-
-> **ℹ️ Info**  
-> The deployment process typically takes less than 1 minute, but can take up to 2 minutes depending on your cluster's resources and network speed.
-
-You should see output similar to the following:
-
-### Platform installation output
+### What's Included
 
 ```
-...
-
-##########################   LOGIN   ############################
-
-Username: admin
-Password: 27177595-21bc-4ff9-9f3a-51e0f722408b  # Change via UI or via: vcluster platform reset password
-
-Login via UI:  https://hth45c8.loft.host
-Login via CLI: vcluster platform login https://hth45c8.loft.host
-
-#################################################################
-
-vCluster Platform was successfully installed and can now be reached at: https://hth45c8.loft.host
-Thanks for using vCluster Platform!
-11:38:33 done You are successfully logged into vCluster Platform!
-- Use `vcluster platform create vcluster` to create a new virtual cluster
-- Use `vcluster platform add vcluster` to add an existing virtual cluster to a vCluster platform instance
+resource-sharing/
+├── application-configs/          # vCluster and Cert Manager configurations
+│   ├── cert-manager.yaml         # Cert Manager installation config
+│   ├── vcluster.yaml             # vCluster configuration with resource sharing
+│   └── configs/
+│       ├── certificate.yaml      # Sample certificate resource
+│       └── issuer.yaml           # ClusterIssuer configuration
+├── applications/                 # Supporting applications
+│   ├── external-dns.yaml         # External DNS configuration
+│   ├── external-dns-policy.json  # IAM policy for External DNS
+│   └── nginx-fabric.yaml         # NGINX Fabric configuration
+└── host-cluster-config/          # Host cluster setup
+    ├── eks-cluster.yaml          # EKS cluster configuration
+    └── eks-storageclass.yaml     # Storage class for EKS
 ```
 
-After successful deployment, the UI automatically opens in your default web browser. You are prompted to create an administrator user.
+### Key Benefits Demonstrated
 
-## Configuration
+- **Single Cert Manager Installation**: One Cert Manager serves multiple vclusters
+- **Resource Efficiency**: Reduced overhead by sharing infrastructure components
+- **Centralized Management**: Control certificate issuers from the host cluster
+- **Multi-Tenant Ready**: Teams get isolated vclusters with shared certificate infrastructure
 
-The `vcluster CLI` offers various configuration options to customize the deployment process.
+➡️ See the full guide: [`resource-sharing/application-configs/README.md`](./resource-sharing/application-configs/README.md)
 
-### Non-default Kubernetes cluster
+---
 
-By default, the platform is deployed to the current Kubernetes context.
+## Auto Nodes Demo
 
-#### Get the current Kubernetes context
+**Location:** [`auto-nodes/`](./auto-nodes/)
 
-```bash
-kubectl config current-context
+This demo showcases vCluster's **Auto Nodes** feature on Google Cloud Platform (GCP). Auto Nodes allows vclusters to automatically provision real compute nodes from cloud providers on demand, including GPU-enabled instances for AI/ML workloads.
+
+### What's Included
+
+```
+auto-nodes/
+├── README.md                 # Complete setup guide for GCP
+├── auto-nodes-role.yaml      # Custom IAM role for vCluster Auto Nodes
+├── node-provider.yaml        # Node provider configuration for GCP
+├── vcluster-config.yaml      # vCluster configuration with Auto Nodes
+├── gpu-workload.yaml         # Sample GPU workload (NVIDIA CUDA job)
+└── template/                 # Terraform templates
+    ├── infrastructure/       # Infrastructure provisioning (IAM, firewall, etc.)
+    └── node/                 # Node template configuration
 ```
 
-This can be overridden by specifying the `--context` flag:
+### Key Features Demonstrated
 
-#### Deploy the platform to a specific Kubernetes context
+- **Dynamic Node Provisioning**: Automatically create compute nodes when workloads demand them
+- **GPU Support**: Provision NVIDIA Tesla T4 GPU nodes for AI/ML workloads
+- **GCP Integration**: Full integration with Google Cloud using Workload Identity
+- **Cost Optimization**: Nodes are provisioned on-demand and can scale down when not needed
+- **Customizable Node Types**: Define different node configurations (CPU, GPU, memory)
 
-```bash
-vcluster platform start --context my-cluster
-```
+### Node Types Configured
 
-### Custom namespace
+| Node Type | Instance | Resources | Use Case |
+|-----------|----------|-----------|----------|
+| CPU Nodes | e2-small | 2 CPU, 2Gi RAM | General workloads |
+| GPU Nodes | n1-standard-4 + T4 | 1 CPU, 3.75Gi RAM, 1 GPU | AI/ML workloads |
 
-By default, the platform is deployed to the `vcluster-platform` namespace. This can be changed by specifying the `--namespace` flag:
-
-#### Deploy the platform to a custom namespace
-
-```bash
-vcluster platform start --namespace my-namespace
-```
-
-> **ℹ️ Info**  
-> If the specified namespace does not exist, it is created automatically.
+➡️ See the full setup guide: [`auto-nodes/README.md`](./auto-nodes/README.md)
