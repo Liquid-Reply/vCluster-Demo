@@ -21,10 +21,10 @@ resource "google_project_iam_member" "ccm_roles" {
 }
 
 resource "google_project_iam_custom_role" "ccm_firewall_min" {
-  for_each = local.ccm_enabled ? { for v in [local.random_id] : v => v } : {}
+  for_each = local.ccm_enabled ? { enabled = true } : {}
 
   project     = local.project
-  role_id     = replace(format("ccm-firewall-%s", each.key), "-", "_")
+  role_id     = replace(format("ccm_firewall_%s_%s", local.random_id, formatdate("ss", timestamp())), "-", "_")
   title       = format("CCM firewall for %s", local.vcluster_name)
   description = format("Minimal VPC firewall permissions for CCM, used by %s", local.vcluster_name)
   permissions = [
@@ -35,10 +35,14 @@ resource "google_project_iam_custom_role" "ccm_firewall_min" {
     "compute.firewalls.update",
     "compute.networks.updatePolicy",
   ]
+  
+  lifecycle {
+    ignore_changes = [role_id]
+  }
 }
 
 resource "google_project_iam_member" "ccm_firewall_binding" {
-  for_each = local.ccm_enabled ? { for v in [local.random_id] : v => v } : {}
+  for_each = local.ccm_enabled ? { enabled = true } : {}
 
   project = local.project
   role    = google_project_iam_custom_role.ccm_firewall_min[each.key].name
