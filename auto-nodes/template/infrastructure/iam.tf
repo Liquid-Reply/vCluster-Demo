@@ -20,13 +20,6 @@ resource "google_project_iam_member" "ccm_roles" {
   member  = "serviceAccount:${google_service_account.vcluster_node.email}"
 }
 
-# Import block to bring existing role into state
-import {
-  for_each = local.ccm_enabled ? { enabled = true } : {}
-  to       = google_project_iam_custom_role.ccm_firewall_min[each.key]
-  id       = "projects/${local.project}/roles/${replace(format("ccm-firewall-%s", local.random_id), "-", "_")}"
-}
-
 resource "google_project_iam_custom_role" "ccm_firewall_min" {
   for_each = local.ccm_enabled ? { enabled = true } : {}
 
