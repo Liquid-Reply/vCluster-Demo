@@ -26,13 +26,17 @@ privateNodes:
               values: ["none"]
             - property: instance-type
               operator: In
-              values: ["e2-small"]
+              values: ["e2-medium"]
           limits:
             cpu: "4"
             memory: "8Gi"
         
         # GPU nodes (T4)
         - name: gpu-nodes
+          taints:
+            - key: dedicated
+              value: gpu
+              effect: NoSchedule
           nodeTypeSelector:
             - property: region
               operator: In
@@ -50,3 +54,7 @@ privateNodes:
             cpu: "2"
             memory: "8Gi"
             nvidia.com/gpu: "1"
+          disruption:
+            consolidationPolicy: WhenEmpty
+            consolidateAfter: 10s
+          terminationGracePeriod: 30s

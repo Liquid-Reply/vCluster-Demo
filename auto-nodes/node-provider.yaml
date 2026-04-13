@@ -27,7 +27,7 @@ spec:
           cpu: "2"
           memory: "2Gi"
         properties:
-          instance-type: e2-small
+          instance-type: e2-medium
           region: europe-west1
           zone: europe-west1-b
           project: "*"
