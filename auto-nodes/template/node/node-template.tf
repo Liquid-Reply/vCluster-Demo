@@ -15,9 +15,9 @@ locals {
   has_gpu           = local.accelerator != "none" && local.accelerator != "" && local.accelerator_count > 0
   
   # Image selection based on GPU presence
-  # GPU: Deep Learning VM with CUDA 12.8, Ubuntu 24.04, NVIDIA driver 570
+  # GPU: Deep Learning VM with CUDA 12.9, Ubuntu 24.04, NVIDIA driver 580
   image_config = local.has_gpu ? {
-    family  = "common-cu128-ubuntu-2404-nvidia-570"
+    family  = "common-cu129-ubuntu-2404-nvidia-580"
     project = "deeplearning-platform-release"
   } : {
     family  = "ubuntu-2404-lts-amd64"
