@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: contract-summarizer
+  labels:
+    app: contract-summarizer
+    gpu.platform/tenant: legal-ai
+spec:
+  resourceClaims:
+    - name: whole-gpu
+      resourceClaimName: legal-whole-gpu
+  containers:
+    - name: llm
+      image: ubuntu:22.04
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          echo "Starting legal contract summarization workload"
+          echo "Using whole GPU claim"
+          nvidia-smi -L || true
+          sleep 3600
+      resources:
+        claims:
+          - name: whole-gpu
+  tolerations:
+    - key: "nvidia.com/gpu"
+      operator: "Exists"
+      effect: "NoSchedule"

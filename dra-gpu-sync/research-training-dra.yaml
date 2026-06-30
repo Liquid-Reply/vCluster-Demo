@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: research-training-job
+  labels:
+    app: research-training-job
+    gpu.platform/tenant: research-ai
+spec:
+  resourceClaims:
+    - name: gpu-slice
+      resourceClaimName: research-gpu-slice
+  containers:
+    - name: trainer
+      image: ubuntu:22.04
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          echo "Starting research training workload"
+          echo "Using MIG GPU slice claim"
+          nvidia-smi -L || true
+          sleep 3600
+      resources:
+        claims:
+          - name: gpu-slice
+  tolerations:
+    - key: "nvidia.com/gpu"
+      operator: "Exists"
+      effect: "NoSchedule"

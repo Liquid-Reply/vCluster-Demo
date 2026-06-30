@@ -1,0 +1,15 @@
+apiVersion: resource.k8s.io/v1
+kind: ResourceClaim
+metadata:
+  name: research-gpu-slice
+  labels:
+    gpu.platform/tenant: research-ai
+    gpu.platform/allocation: slice
+spec:
+  devices:
+    requests:
+      - name: gpu
+        exactly:
+          deviceClassName: gpu-slice
+          allocationMode: ExactCount
+          count: 1

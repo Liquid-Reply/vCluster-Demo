@@ -1,0 +1,11 @@
+# research-ai vCluster config for DRA sync.
+sync:
+  toHost:
+    resourceClaims:
+      enabled: true
+  fromHost:
+    deviceClasses:
+      enabled: true
+      selector:
+        matchLabels:
+          gpu.platform/tenant: research-ai
