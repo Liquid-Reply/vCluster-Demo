@@ -1,0 +1,15 @@
+apiVersion: resource.k8s.io/v1
+kind: ResourceClaim
+metadata:
+  name: legal-whole-gpu
+  labels:
+    gpu.platform/tenant: legal-ai
+    gpu.platform/allocation: whole
+spec:
+  devices:
+    requests:
+      - name: gpu
+        exactly:
+          deviceClassName: gpu-whole
+          allocationMode: ExactCount
+          count: 1

@@ -1,0 +1,25 @@
+apiVersion: resource.k8s.io/v1
+kind: DeviceClass
+metadata:
+  name: gpu-slice
+  labels:
+    gpu.platform/tenant: research-ai
+    gpu.platform/allocation: slice
+    kubernetes.io/device.class: nvidia
+spec:
+  selectors:
+    - cel:
+        expression: "device.driver == 'mig.nvidia.com' && device.attributes['gpu.nvidia.com'].profile == '1g.5gb'"
+---
+apiVersion: resource.k8s.io/v1
+kind: DeviceClass
+metadata:
+  name: gpu-whole
+  labels:
+    gpu.platform/tenant: legal-ai
+    gpu.platform/allocation: whole
+    kubernetes.io/device.class: nvidia
+spec:
+  selectors:
+    - cel:
+        expression: "device.driver == 'gpu.nvidia.com'"
